@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TP04 Frontend - Azure Pipelines</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TP04 Frontend - Azure Pipelines</h1>
+        <p>Aplicación Frontend para demostrar CI/CD</p>
+        <div id="backend-status" class="status">Conectando al backend...</div>
+        <button onclick="testBackend()">Probar Conexión Backend</button>
+        
+        <h3>Información del Build:</h3>
+        <ul>
+            <li>Versión: 1.0.0</li>
+            <li>Build: Azure Pipelines</li>
+            <li>Fecha: <span id="build-date"></span></li>
+        </ul>
+    </div>
+
+    <script>
+        document.getElementById('build-date').textContent = new Date().toLocaleDateString();
+        
+        function testBackend() {
+            const statusDiv = document.getElementById('backend-status');
+            statusDiv.textContent = 'Conectando...';
+            statusDiv.className = 'status';
+            
+            // En producción usar la URL real del backend
+            const backendUrl = window.location.hostname === 'localhost' ? 
+                'http://localhost:3001' : '/api';
+                
+            fetch(backendUrl)
+                .then(response => response.json())
+                .then(data => {
+                    statusDiv.textContent = `✓ ${data.message} (${data.timestamp})`;
+                    statusDiv.className = 'status success';
+                })
+                .catch(err => {
+                    statusDiv.textContent = `✗ Error: ${err.message}`;
+                    statusDiv.className = 'status error';
+                });
+        }
+        
+        // Test automático al cargar
+        testBackend();
+    </script>
+</body>
+</html>
