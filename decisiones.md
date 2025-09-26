@@ -49,56 +49,92 @@ npm install express cors
 **Stack elegido:** Node.js + Express
 **Por qué:** Rápido de configurar, ideal para CI/CD, compatible con npm scripts que Azure Pipelines maneja nativamente.
 
-## 3. Pipeline YAML Multi-Stage
+3. Pipeline YAML Multi-Stage
 
-6) Creé azure-pipelines.yml en la raíz:
-```yaml
+Creé azure-pipelines.yml en la raíz con explicaciones detalladas:
+
+yaml# TRIGGER: Define cuándo se ejecuta el pipeline automáticamente
 trigger:
   branches:
     include:
-      - main
+      - main  # Solo se dispara en commits a rama main, no en feature branches
 
+# POOL: Define dónde se ejecuta el pipeline
 pool:
-  name: Default  # Self-hosted agent
+  name: Default  # Usa el pool Default donde registré mi self-hosted agent Santos-MacBook
+  # Alternativa sería: vmImage: 'ubuntu-latest' para Microsoft-hosted
 
+# STAGES: Estructura del pipeline en etapas
 stages:
-- stage: CI
-  displayName: 'Continuous Integration'
+- stage: CI  # Nombre interno del stage
+  displayName: 'Continuous Integration'  # Nombre visible en Azure DevOps
+  
+  # JOBS: Trabajos que corren dentro del stage
   jobs:
+  # JOB 1: Build del Frontend
   - job: BuildFrontend
-    displayName: 'Build Frontend'
-    steps:
-    - script: |
-        cd front
-        npm run build
-      displayName: 'Build Frontend'
+    displayName: 'Build Frontend'  # Nombre visible del job
     
-    - task: PublishBuildArtifacts@1
+    # STEPS: Pasos secuenciales dentro del job
+    steps:
+    # STEP 1: Script personalizado para build
+    - script: |
+        cd front                    # Navegar a carpeta frontend
+        npm run build              # Ejecutar script de build (crea dist/)
+      displayName: 'Build Frontend'  # Descripción del paso
+    
+    # STEP 2: Publicar artefactos (archivos de salida)
+    - task: PublishBuildArtifacts@1  # Task oficial de Azure DevOps
       inputs:
-        PathtoPublish: 'front/dist'
-        ArtifactName: 'frontend-dist'
+        PathtoPublish: 'front/dist'   # Carpeta que contiene los archivos compilados
+        ArtifactName: 'frontend-dist' # Nombre del artefacto en Azure DevOps
+      # Esto permite descargar los archivos desde la interfaz
 
+  # JOB 2: Build del Backend (corre en paralelo con Frontend)
   - job: BuildBackend
-    displayName: 'Build Backend'  
-    steps:
-    - script: |
-        cd back
-        npm install
-        npm test
-        npm run build
-      displayName: 'Build and Test Backend'
+    displayName: 'Build Backend'
     
+    steps:
+    # STEP 1: Instalar dependencias, probar y compilar
+    - script: |
+        cd back                     # Navegar a carpeta backend
+        npm install                 # Instalar node_modules/
+        npm test                    # Ejecutar tests (echo "Backend tests OK")
+        npm run build               # Compilar (echo "Backend build completed")
+      displayName: 'Build and Test Backend'
+      # Si npm test falla, todo el pipeline se detiene
+    
+    # STEP 2: Publicar código backend como artefacto
     - task: PublishBuildArtifacts@1
       inputs:
-        PathtoPublish: 'back'
-        ArtifactName: 'backend-dist'
-```
+        PathtoPublish: 'back'         # Toda la carpeta back/ (incluye node_modules)
+        ArtifactName: 'backend-dist'  # Nombre del artefacto
+      # Esto permite deployment posterior desde los artefactos
+Decisiones de diseño del YAML:
+Por qué esta estructura:
 
-**Diseño del Pipeline:**
-- **Trigger en main:** Automático en cada push a rama principal
-- **Multi-stage:** Un stage CI con dos jobs paralelos
-- **Self-hosted:** Corre en mi MacBook (Santos-MacBook)
-- **Artefactos:** Frontend dist/ y Backend completo publicados
+Un solo stage CI: Para el TP es suficiente. En producción agregaría stages Test, Deploy-Dev, Deploy-Prod
+Jobs paralelos: Frontend y Backend se compilan simultáneamente, reduce tiempo total
+Self-hosted pool: Cumple requisito del TP y permite control total del entorno
+
+Alternativas que consideré:
+
+Triggers en múltiples branches: Descarté porque complica testing
+Matrix strategy: Para múltiples versiones Node.js, innecesario para el TP
+Conditional steps: Para ejecutar solo si cambiaron archivos específicos
+
+Scripts vs Tasks:
+
+Scripts personalizados: Para comandos específicos npm/shell
+Tasks oficiales: Para PublishBuildArtifacts (manejo nativo de metadatos)
+
+Orden de steps:
+
+Build primero: Compilar código fuente
+Publish después: Solo si build fue exitoso
+Fail fast: Si npm test falla, no publicar artefactos inútiles
+
+
 
 ## 4. Ejecuciones y Resultados
 
