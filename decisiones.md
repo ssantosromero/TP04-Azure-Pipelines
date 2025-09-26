@@ -49,11 +49,11 @@ npm install express cors
 **Stack elegido:** Node.js + Express
 **Por qué:** Rápido de configurar, ideal para CI/CD, compatible con npm scripts que Azure Pipelines maneja nativamente.
 
-3. Pipeline YAML Multi-Stage
+## 3. Pipeline YAML Multi-Stage
 
-Creé azure-pipelines.yml en la raíz con explicaciones detalladas:
-
-yaml# TRIGGER: Define cuándo se ejecuta el pipeline automáticamente
+6) Creé azure-pipelines.yml en la raíz con explicaciones detalladas:
+```yaml
+# TRIGGER: Define cuándo se ejecuta el pipeline automáticamente
 trigger:
   branches:
     include:
@@ -110,31 +110,28 @@ stages:
         PathtoPublish: 'back'         # Toda la carpeta back/ (incluye node_modules)
         ArtifactName: 'backend-dist'  # Nombre del artefacto
       # Esto permite deployment posterior desde los artefactos
-Decisiones de diseño del YAML:
-Por qué esta estructura:
+```
 
-Un solo stage CI: Para el TP es suficiente. En producción agregaría stages Test, Deploy-Dev, Deploy-Prod
-Jobs paralelos: Frontend y Backend se compilan simultáneamente, reduce tiempo total
-Self-hosted pool: Cumple requisito del TP y permite control total del entorno
+**Decisiones de diseño del YAML:**
 
-Alternativas que consideré:
+**Por qué esta estructura:**
+- **Un solo stage CI:** Para el TP es suficiente. En producción agregaría stages Test, Deploy-Dev, Deploy-Prod
+- **Jobs paralelos:** Frontend y Backend se compilan simultáneamente, reduce tiempo total
+- **Self-hosted pool:** Cumple requisito del TP y permite control total del entorno
 
-Triggers en múltiples branches: Descarté porque complica testing
-Matrix strategy: Para múltiples versiones Node.js, innecesario para el TP
-Conditional steps: Para ejecutar solo si cambiaron archivos específicos
+**Alternativas que consideré:**
+- **Triggers en múltiples branches:** Descarté porque complica testing
+- **Matrix strategy:** Para múltiples versiones Node.js, innecesario para el TP
+- **Conditional steps:** Para ejecutar solo si cambiaron archivos específicos
 
-Scripts vs Tasks:
+**Scripts vs Tasks:**
+- **Scripts personalizados:** Para comandos específicos npm/shell
+- **Tasks oficiales:** Para PublishBuildArtifacts (manejo nativo de metadatos)
 
-Scripts personalizados: Para comandos específicos npm/shell
-Tasks oficiales: Para PublishBuildArtifacts (manejo nativo de metadatos)
-
-Orden de steps:
-
-Build primero: Compilar código fuente
-Publish después: Solo si build fue exitoso
-Fail fast: Si npm test falla, no publicar artefactos inútiles
-
-
+**Orden de steps:**
+1. **Build primero:** Compilar código fuente
+2. **Publish después:** Solo si build fue exitoso
+3. **Fail fast:** Si npm test falla, no publicar artefactos inútiles
 
 ## 4. Ejecuciones y Resultados
 
